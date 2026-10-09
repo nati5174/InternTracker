@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InternTrack 2027</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f6f8fc;
+  --white:     #ffffff;
+  --border:    #e0e0e0;
+  --border2:   #dadce0;
+  --text:      #202124;
+  --muted:     #5f6368;
+  --muted2:    #80868b;
+  --blue:      #1a73e8;
+  --blue-bg:   #d3e3fd;
+  --blue-lt:   #e8f0fe;
+  --red:       #d93025;
+  --hover:     #f2f6fc;
+  --selected:  #d3e3fd;
+  --shadow:    0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.08);
+  --shadow2:   0 2px 8px rgba(0,0,0,.14);
+  --s-applied:   #1a73e8;
+  --s-oa:        #e37400;
+  --s-interview: #8430ce;
+  --s-offer:     #137333;
+  --s-declined:  #c5221f;
+  --s-flagged:   #e37400;
+}
+
+html, body { height: 100%; font-family: "Google Sans", Roboto, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; overflow: hidden; }
+
+/* ── TOP HEADER ── */
+header {
+  height: 64px; background: var(--white);
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; border-bottom: 1px solid var(--border);
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+}
+.header-logo { display: flex; align-items: center; gap: 8px; min-width: 200px; }
+.header-logo svg { color: var(--red); }
+.header-logo span { font-size: 20px; font-weight: 400; color: var(--muted); letter-spacing: -.5px; }
+.header-logo span b { color: var(--text); font-weight: 500; }
+
+.search-bar {
+  flex: 1; max-width: 720px; margin: 0 auto;
+  background: var(--bg); border-radius: 24px; height: 46px;
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  transition: background .2s, box-shadow .2s;
+}
+.search-bar:focus-within { background: var(--white); box-shadow: var(--shadow2); }
+.search-bar input { background: none; border: none; outline: none; font-size: 16px; color: var(--text); width: 100%; font-family: inherit; }
+.search-bar input::placeholder { color: var(--muted); }
+.search-icon { color: var(--muted); flex-shrink: 0; }
+
+.header-right { display: flex; align-items: center; gap: 8px; min-width: 200px; justify-content: flex-end; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: background .15s;
+}
+.icon-btn:hover { background: var(--bg); }
+.auth-pill {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 20px; font-size: 12px; font-weight: 500; cursor: default;
+  border: 1px solid var(--border2);
+}
+.auth-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-declined); }
+.auth-dot.ok { background: var(--s-offer); }
+
+/* ── BODY LAYOUT ── */
+.app-body { display: flex; height: 100vh; padding-top: 64px; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 256px; flex-shrink: 0; padding: 8px 0; overflow-y: auto;
+  background: var(--white);
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+
+.compose-btn {
+  display: flex; align-items: center; gap: 10px;
+  margin: 8px 16px 4px; padding: 16px 24px;
+  background: var(--white); border: none; border-radius: 16px;
+  box-shadow: var(--shadow2); cursor: pointer; font-size: 14px; font-weight: 500;
+  color: var(--text); transition: box-shadow .2s, background .15s;
+  width: calc(100% - 32px);
+}
+.compose-btn:hover { background: #f0f4ff; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+.compose-btn svg { color: var(--red); flex-shrink: 0; }
+
+.nav-section { padding: 4px 0; }
+.nav-label { font-size: 11px; font-weight: 500; color: var(--muted); padding: 8px 28px 4px; text-transform: uppercase; letter-spacing: .8px; }
+.nav-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 28px 8px 26px; cursor: pointer; border-radius: 0 24px 24px 0;
+  margin-right: 16px; transition: background .1s; font-size: 14px; color: var(--text);
+  font-weight: 400; white-space: nowrap;
+}
+.nav-item:hover { background: var(--hover); }
+.nav-item.active { background: var(--blue-bg); font-weight: 600; }
+.nav-item svg { color: var(--muted); flex-shrink: 0; }
+.nav-item.active svg { color: var(--blue); }
+.nav-count { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--text); }
+.nav-divider { height: 1px; background: var(--border2); margin: 6px 0; }
+
+.cycle-tag {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 28px; cursor: pointer; border-radius: 0 24px 24px 0;
+  margin-right: 16px; font-size: 13px; color: var(--muted); transition: background .1s;
+}
+.cycle-tag:hover { background: var(--hover); color: var(--text); }
+.cycle-tag.active { background: var(--blue-bg); color: var(--text); font-weight: 500; }
+.cycle-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* ── TOOLBAR ── */
+.list-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px 4px; background: var(--bg); flex-shrink: 0;
+}
+.toolbar-left { display: flex; align-items: center; gap: 4px; }
+.toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.tb-btn {
+  height: 36px; border: none; background: none; cursor: pointer; border-radius: 4px;
+  display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  font-size: 13px; color: var(--muted); transition: background .1s;
+}
+.tb-btn:hover { background: var(--border2); color: var(--text); }
+.tb-btn:disabled { opacity: .45; cursor: not-allowed; }
+.view-seg { display: flex; border: 1px solid var(--border2); border-radius: 4px; overflow: hidden; }
+.view-seg button {
+  border: none; background: var(--white); padding: 6px 12px; cursor: pointer;
+  color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 5px;
+  transition: background .1s; border-right: 1px solid var(--border2);
+}
+.view-seg button:last-child { border-right: none; }
+.view-seg button.active { background: var(--blue-lt); color: var(--blue); font-weight: 500; }
+.view-seg button:hover:not(.active) { background: var(--hover); }
+
+/* ── STATS STRIP ── */
+.stats-strip {
+  display: flex; gap: 8px; padding: 0 16px 8px; overflow-x: auto;
+  background: var(--bg); flex-shrink: 0;
+}
+.stats-strip::-webkit-scrollbar { height: 0; }
+.stat-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; background: var(--white); border-radius: 20px;
+  border: 1px solid var(--border2); font-size: 12px; cursor: pointer;
+  white-space: nowrap; transition: all .15s;
+}
+.stat-chip:hover { border-color: var(--blue); }
+.stat-chip.active { background: var(--blue-lt); border-color: var(--blue); color: var(--blue); }
+.stat-num { font-weight: 600; font-size: 13px; }
+.chip-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ── EMAIL LIST ── */
+#list-view { flex: 1; overflow-y: auto; background: var(--bg); padding: 0 8px 16px; }
+#list-view::-webkit-scrollbar { width: 8px; }
+#list-view::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.email-list { background: var(--white); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+
+.email-row {
+  display: flex; align-items: center; gap: 0;
+  padding: 0 16px; height: 52px; cursor: pointer;
+  border-bottom: 1px solid var(--border); transition: background .1s; position: relative;
+}
+.email-row:last-child { border-bottom: none; }
+.email-row:hover { background: var(--hover); box-shadow: inset 1px 0 0 var(--border), inset -1px 0 0 var(--border); }
+.email-row.read { background: var(--white); }
+.email-row.unread { background: #fff; font-weight: 600; }
+.email-row.unread .row-company { font-weight: 700; }
+
+.row-check {
+  width: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+.row-check input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--blue); }
+
+.row-star {
+  width: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--border2); cursor: pointer; font-size: 16px; transition: color .1s;
+}
+.row-star:hover, .row-star.starred { color: #f4b400; }
+
+.row-company { width: 180px; flex-shrink: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
+
+.row-body { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.row-subject { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-snippet { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; }
+
+.row-labels { display: flex; gap: 4px; flex-shrink: 0; }
+.label-pill {
+  font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 4px;
+  white-space: nowrap;
+}
+.lp-Applied   { background: #e8f0fe; color: var(--s-applied); }
+.lp-OA        { background: #fef3e2; color: var(--s-oa); }
+.lp-Interview { background: #f3e8fd; color: var(--s-interview); }
+.lp-Offer     { background: #e6f4ea; color: var(--s-offer); }
+.lp-Declined  { background: #fce8e6; color: var(--s-declined); }
+.lp-Summer    { background: #e8f0fe; color: #1967d2; }
+.lp-Winter    { background: #e8eaf6; color: #3949ab; }
+.lp-Flagged   { background: #fef3e2; color: var(--s-flagged); }
+
+.row-actions { display: none; position: absolute; right: 16px; gap: 4px; background: var(--hover); padding: 4px; border-radius: 6px; }
+.email-row:hover .row-actions { display: flex; }
+.email-row:hover .row-date { display: none; }
+.row-action-btn {
+  width: 28px; height: 28px; border: none; background: none; cursor: pointer;
+  border-radius: 4px; color: var(--muted); display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.row-action-btn:hover { background: var(--border2); color: var(--text); }
+.row-action-btn.del:hover { color: var(--s-declined); }
+.row-action-btn.flg:hover { color: var(--s-flagged); }
+
+.row-date { font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; width: 56px; text-align: right; }
+
+.email-row.flagged-row { border-left: 3px solid var(--s-flagged); }
+
+.empty-list { text-align: center; padding: 80px 20px; color: var(--muted); }
+.empty-list svg { margin-bottom: 16px; opacity: .4; }
+.empty-list h3 { font-size: 22px; font-weight: 400; margin-bottom: 8px; color: var(--text); }
+.empty-list p { font-size: 14px; }
+
+/* ── KANBAN ── */
+#kanban-view { flex: 1; display: none; overflow-x: auto; overflow-y: hidden; padding: 12px 8px 16px; gap: 8px; background: var(--bg); }
+.k-column {
+  flex: 0 0 220px; background: var(--white); border-radius: 12px;
+  border: 1px solid var(--border2); display: flex; flex-direction: column;
+  max-height: 100%;
+}
+.k-col-hdr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border2); flex-shrink: 0; }
+.k-col-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.k-col-title { font-size: 13px; font-weight: 600; flex: 1; color: var(--text); }
+.k-col-count { font-size: 11px; background: var(--bg); border-radius: 20px; padding: 2px 8px; color: var(--muted); }
+.k-col-cards { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.k-col-cards::-webkit-scrollbar { width: 4px; }
+.k-col-cards::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.k-card {
+  background: var(--white); border: 1px solid var(--border2); border-radius: 10px;
+  padding: 10px 11px; cursor: pointer; transition: box-shadow .15s;
+  position: relative;
+}
+.k-card:hover { box-shadow: var(--shadow2); }
+.k-card.flagged { border-left: 3px solid var(--s-flagged); }
+.k-company { font-weight: 600; font-size: 13px; color: var(--text); padding-right: 40px; }
+.k-role { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
+.k-footer { display: flex; align-items: center; justify-content: space-between; }
+.k-date { font-size: 10px; color: var(--muted2); }
+.k-cycle { font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 600; background: var(--blue-lt); color: var(--blue); }
+.k-card-actions { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; }
+.k-card:hover .k-card-actions { display: flex; }
+.k-action-btn { width: 22px; height: 22px; border: none; background: var(--bg); border-radius: 4px; cursor: pointer; color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.k-action-btn:hover { color: var(--text); }
+.k-action-btn.del:hover { color: var(--s-declined); }
+.k-action-btn.flg:hover { color: var(--s-flagged); }
+
+/* ── FLAGGED VIEW ── */
+#flagged-view { flex: 1; overflow-y: auto; padding: 16px; display: none; background: var(--bg); }
+.flagged-section-hdr { font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 4px; }
+.flagged-section-sub { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+.flagged-cards { display: flex; flex-direction: column; gap: 10px; }
+.f-card {
+  background: var(--white); border-radius: 12px; padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08); border-left: 4px solid var(--s-flagged);
+}
+.f-card-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.f-company { font-weight: 700; font-size: 15px; }
+.f-role { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.f-badges { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.issue-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #fef3e2; color: var(--s-flagged); }
+.suggestion { font-size: 12px; color: var(--muted); }
+.f-note { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 12px; padding: 8px 12px; background: var(--bg); border-radius: 6px; }
+.f-email {
+  background: var(--bg); border-radius: 8px; padding: 12px 14px;
+  font-size: 12px; color: var(--muted); white-space: pre-wrap; font-family: "Roboto Mono", "Courier New", monospace;
+  max-height: 180px; overflow-y: auto; margin-bottom: 12px; line-height: 1.6;
+}
+.f-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.f-btn {
+  padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border2);
+  font-size: 13px; font-weight: 500; cursor: pointer; background: var(--white);
+  color: var(--text); transition: all .15s; font-family: inherit;
+}
+.f-btn:hover { background: var(--bg); }
+.f-btn.apply { background: var(--blue); color: #fff; border-color: var(--blue); }
+.f-btn.apply:hover { background: #1557b0; }
+.f-btn.dismiss { color: var(--muted); }
+.f-btn.danger { color: var(--s-declined); border-color: #f5c6c4; }
+.f-btn.danger:hover { background: #fce8e6; }
+
+/* ── READ VIEW (email reading pane) ── */
+#read-view { flex: 1; overflow-y: auto; padding: 0; display: none; background: var(--bg); }
+.read-toolbar { display: flex; align-items: center; gap: 4px; padding: 8px 16px; background: var(--bg); position: sticky; top: 0; z-index: 10; }
+.read-paper {
+  background: var(--white); margin: 0 16px 16px; border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.1); overflow: hidden;
+}
+.read-header { padding: 24px 28px 16px; border-bottom: 1px solid var(--border); }
+.read-subject { font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 16px; }
+.read-meta { display: flex; align-items: flex-start; gap: 12px; }
+.read-avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 16px; color: #fff;
+}
+.read-from-name { font-size: 14px; font-weight: 500; }
+.read-from-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.read-date-area { margin-left: auto; font-size: 12px; color: var(--muted); text-align: right; }
+.read-labels { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.read-body { padding: 24px 28px; font-size: 14px; color: var(--text); white-space: pre-wrap; line-height: 1.7; font-family: Roboto, Arial, sans-serif; min-height: 200px; }
+.read-body.no-email { color: var(--muted); font-style: italic; }
+.read-actions-bar { display: flex; gap: 8px; padding: 12px 28px; border-top: 1px solid var(--border); background: var(--white); }
+
+/* ── MODALS ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: none; align-items: center; justify-content: center; z-index: 300;
+  backdrop-filter: blur(2px);
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 16px; width: 520px; max-width: 96vw;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.1);
+  display: flex; flex-direction: column;
+}
+.modal-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+}
+.modal-hdr h2 { font-size: 18px; font-weight: 400; }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--muted); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background .1s; }
+.modal-close:hover { background: var(--bg); color: var(--text); }
+.modal-body { padding: 20px 24px; flex: 1; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+.modal-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.m-tab { padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted); border-bottom: 3px solid transparent; background: none; border-left: none; border-right: none; border-top: none; font-family: inherit; transition: all .15s; }
+.m-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.m-tab-body { display: none; padding: 20px 24px; }
+.m-tab-body.active { display: block; }
+
+/* Form elements */
+.fg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.fg label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.fg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+input[type=text], input[type=date], input[type=url], select, textarea {
+  background: var(--white); border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--text); padding: 8px 12px; font-size: 14px; outline: none;
+  width: 100%; transition: border-color .15s; font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--blue); border-width: 2px; }
+textarea { resize: vertical; min-height: 70px; }
+select option { background: var(--white); }
+
+/* Email tab in modal */
+.email-body-modal { background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 14px; font-size: 12px; color: var(--muted); white-space: pre-wrap; font-family: monospace; max-height: 320px; overflow-y: auto; line-height: 1.6; }
+
+/* Buttons */
+.gm-btn {
+  padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--white);
+  color: var(--text); font-family: inherit; transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.gm-btn:hover { background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.gm-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.gm-btn.primary:hover { background: #1557b0; }
+.gm-btn.danger { color: var(--s-declined); }
+.gm-btn.danger:hover { background: #fce8e6; }
+.gm-btn.warn { color: var(--s-flagged); }
+.gm-btn.warn:hover { background: #fef3e2; }
+.gm-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Toast */
+#toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  background: #323232; color: #fff; border-radius: 8px; padding: 12px 20px;
+  font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  animation: toastIn .2s ease; white-space: nowrap;
+}
+@keyframes toastIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* OA submitted indicator */
+.lp-OA-done { background: #fff3e0; color: #e65100; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.row-action-btn.oa-done-btn { color: var(--s-oa); }
+.row-action-btn.oa-done-btn.done { color: #137333; }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header>
+  <div class="header-logo">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 2l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"/></svg>
+    <span><b>InternTrack</b> 2027</span>
+  </div>
+
+  <div class="search-bar">
+    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="searchInput" type="text" placeholder="Search in applications">
+  </div>
+
+  <div class="header-right">
+    <button class="icon-btn" id="syncBtn" title="Sync Gmail">
+      <svg id="syncIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 009 9 9.75 9.75 0 006.74-2.74L21 16"/><path d="M21 3v7h-7"/><path d="M21 12A9 9 0 0012 3a9.75 9.75 0 00-6.74 2.74L3 8"/></svg>
+    </button>
+    <div class="auth-pill">
+      <div class="auth-dot" id="authDot"></div>
+      <span id="authLabel">Not connected</span>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <button class="compose-btn" id="addBtn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Add Application
+    </button>
+
+    <div class="nav-section">
+      <div class="nav-item active" data-navfilter="all" onclick="setNavFilter('all',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+        All Applications
+        <span class="nav-count" id="nc-total">0</span>
+      </div>
+      <div class="nav-item" data-navfilter="Applied" onclick="setNavFilter('Applied',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Applied
+        <span class="nav-count" id="nc-Applied" style="color:var(--s-applied)">0</span>
+      </div>
+      <div class="nav-item" data-navfilter="OA" onclick="setNavFilter('OA',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Online Assessment
+        <span class="nav-count" id="nc-OA" style="color:var(--s-oa)">0</span>
+      </div>
+      <div class="nav-item" data-navfilter="Interview" onclick="setNavFilter('Interview',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Interview
+        <span class="nav-count" id="nc-Interview" style="color:var(--s-interview)">0</span>
+      </div>
+      <div class="nav-item" data-navfilter="Offer" onclick="setNavFilter('Offer',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Offer
+        <span class="nav-count" id="nc-Offer" style="color:var(--s-offer)">0</span>
+      </div>
+      <div class="nav-item" data-navfilter="Declined" onclick="setNavFilter('Declined',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Declined
+        <span class="nav-count" id="nc-Declined" style="color:var(--s-declined)">0</span>
+      </div>
+      <div class="nav-item" data-navfilter="oa-done" onclick="setNavFilter('oa-done',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        OA Submitted
+        <span class="nav-count" id="nc-oa-done" style="color:var(--s-oa)">0</span>
+      </div>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-section">
+      <div class="nav-label">Flagged</div>
+      <div class="nav-item" data-navfilter="flagged" onclick="setNavFilter('flagged',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        Needs Review
+        <span class="nav-count" id="nc-flagged" style="color:var(--s-flagged)">0</span>
+      </div>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-section">
+      <div class="nav-label">Cycles</div>
+      <div class="cycle-tag active" data-cycle="all" onclick="setCycle('all',this)">
+        <div class="cycle-dot" style="background:#1a73e8"></div> All
+      </div>
+      <div class="cycle-tag" data-cycle="Summer 2027" onclick="setCycle('Summer 2027',this)">
+        <div class="cycle-dot" style="background:#fbbc04"></div> Summer 2027
+      </div>
+      <div class="cycle-tag" data-cycle="Winter 2027" onclick="setCycle('Winter 2027',this)">
+        <div class="cycle-dot" style="background:#4285f4"></div> Winter 2027
+      </div>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-section">
+      <div class="nav-label">View</div>
+      <div class="nav-item" data-viewmode="kanban" onclick="setViewMode('kanban',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="14" rx="1"/><rect x="17" y="3" width="5" height="10" rx="1"/></svg>
+        Kanban Board
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN AREA -->
+  <div class="main">
+
+    <!-- TOOLBAR -->
+    <div class="list-toolbar">
+      <div class="toolbar-left">
+        <button class="tb-btn" id="refreshBtn" onclick="refresh()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 009 9 9.75 9.75 0 006.74-2.74L21 16"/><path d="M21 3v7h-7"/><path d="M21 12A9 9 0 0012 3a9.75 9.75 0 00-6.74 2.74L3 8"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <span id="countLabel" style="font-size:13px;color:var(--muted);margin-right:8px"></span>
+      </div>
+    </div>
+
+    <!-- STATS STRIP -->
+    <div class="stats-strip">
+      <div style="display:none"><span id="s-total">0</span></div>
+      <div class="stat-chip" data-chipfilter="Applied" onclick="setNavFilter('Applied', document.querySelector('[data-navfilter=Applied]'))">
+        <div class="chip-dot" style="background:var(--s-applied)"></div>
+        <span>Applied</span><span class="stat-num" style="color:var(--s-applied)" id="s-Applied">0</span>
+      </div>
+      <div class="stat-chip" data-chipfilter="OA" onclick="setNavFilter('OA', document.querySelector('[data-navfilter=OA]'))">
+        <div class="chip-dot" style="background:var(--s-oa)"></div>
+        <span>OA</span><span class="stat-num" style="color:var(--s-oa)" id="s-OA">0</span>
+      </div>
+      <div class="stat-chip" data-chipfilter="Interview" onclick="setNavFilter('Interview', document.querySelector('[data-navfilter=Interview]'))">
+        <div class="chip-dot" style="background:var(--s-interview)"></div>
+        <span>Interview</span><span class="stat-num" style="color:var(--s-interview)" id="s-Interview">0</span>
+      </div>
+      <div class="stat-chip" data-chipfilter="Offer" onclick="setNavFilter('Offer', document.querySelector('[data-navfilter=Offer]'))">
+        <div class="chip-dot" style="background:var(--s-offer)"></div>
+        <span>Offer</span><span class="stat-num" style="color:var(--s-offer)" id="s-Offer">0</span>
+      </div>
+      <div class="stat-chip" data-chipfilter="Declined" onclick="setNavFilter('Declined', document.querySelector('[data-navfilter=Declined]'))">
+        <div class="chip-dot" style="background:var(--s-declined)"></div>
+        <span>Declined</span><span class="stat-num" style="color:var(--s-declined)" id="s-Declined">0</span>
+      </div>
+      <div class="stat-chip" data-chipfilter="flagged" onclick="setNavFilter('flagged', document.querySelector('[data-navfilter=flagged]'))">
+        <div class="chip-dot" style="background:var(--s-flagged)"></div>
+        <span>Flagged</span><span class="stat-num" style="color:var(--s-flagged)" id="s-flagged">0</span>
+      </div>
+      <div class="stat-chip" data-chipfilter="oa-done" onclick="setNavFilter('oa-done', document.querySelector('[data-navfilter=oa-done]'))">
+        <div class="chip-dot" style="background:var(--s-oa)"></div>
+        <span>OA Submitted</span><span class="stat-num" style="color:var(--s-oa)" id="s-oa-done">0</span>
+      </div>
+    </div>
+
+    <!-- EMAIL LIST VIEW -->
+    <div id="list-view">
+      <div class="email-list" id="emailList"></div>
+    </div>
+
+    <!-- KANBAN VIEW -->
+    <div id="kanban-view" style="display:none;flex:1;overflow-x:auto;overflow-y:hidden;padding:12px 8px;gap:8px;background:var(--bg)">
+      <div style="display:flex;gap:8px;height:100%">
+        <div class="k-column" id="col-Applied">
+          <div class="k-col-hdr"><div class="k-col-dot" style="background:var(--s-applied)"></div><div class="k-col-title">Applied</div><div class="k-col-count" id="kc-Applied">0</div></div>
+          <div class="k-col-cards" id="kcards-Applied"></div>
+        </div>
+        <div class="k-column" id="col-OA">
+          <div class="k-col-hdr"><div class="k-col-dot" style="background:var(--s-oa)"></div><div class="k-col-title">OA</div><div class="k-col-count" id="kc-OA">0</div></div>
+          <div class="k-col-cards" id="kcards-OA"></div>
+        </div>
+        <div class="k-column" id="col-Interview">
+          <div class="k-col-hdr"><div class="k-col-dot" style="background:var(--s-interview)"></div><div class="k-col-title">Interview</div><div class="k-col-count" id="kc-Interview">0</div></div>
+          <div class="k-col-cards" id="kcards-Interview"></div>
+        </div>
+        <div class="k-column" id="col-Offer">
+          <div class="k-col-hdr"><div class="k-col-dot" style="background:var(--s-offer)"></div><div class="k-col-title">Offer</div><div class="k-col-count" id="kc-Offer">0</div></div>
+          <div class="k-col-cards" id="kcards-Offer"></div>
+        </div>
+        <div class="k-column" id="col-Declined">
+          <div class="k-col-hdr"><div class="k-col-dot" style="background:var(--s-declined)"></div><div class="k-col-title">Declined</div><div class="k-col-count" id="kc-Declined">0</div></div>
+          <div class="k-col-cards" id="kcards-Declined"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- READ VIEW -->
+    <div id="read-view">
+      <div class="read-toolbar">
+        <button class="gm-btn" onclick="closeReadView()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Back
+        </button>
+        <div style="margin-left:8px;flex:1"></div>
+        <button class="gm-btn" id="readEditBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="gm-btn warn" id="readFlagBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          Flag Issue
+        </button>
+        <button class="gm-btn danger" id="readDeleteBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          Delete
+        </button>
+      </div>
+      <div class="read-paper">
+        <div class="read-header">
+          <div class="read-subject" id="readSubject"></div>
+          <div class="read-meta">
+            <div class="read-avatar" id="readAvatar"></div>
+            <div>
+              <div class="read-from-name" id="readFromName"></div>
+              <div class="read-from-detail" id="readFromDetail"></div>
+            </div>
+            <div class="read-date-area" id="readDate"></div>
+          </div>
+          <div class="read-labels" id="readLabels"></div>
+        </div>
+        <div class="read-body" id="readBody"></div>
+      </div>
+    </div>
+
+    <!-- FLAGGED VIEW -->
+    <div id="flagged-view">
+      <div class="flagged-section-hdr">Flagged for Review</div>
+      <div class="flagged-section-sub">Applications that may be misclassified. Review and apply fixes.</div>
+      <div class="flagged-cards" id="flaggedList"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app-body -->
+
+<!-- EDIT MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="editModalTitle">Edit Application</h2>
+      <button class="modal-close" onclick="closeEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="m-tab active" onclick="switchEditTab('form',this)">Details</button>
+      <button class="m-tab" onclick="switchEditTab('email',this)">Email</button>
+    </div>
+    <div class="m-tab-body active" id="etab-form">
+      <input type="hidden" id="editId">
+      <div class="fg2">
+        <div class="fg"><label>Company *</label><input type="text" id="f-company" placeholder="Google"></div>
+        <div class="fg"><label>Role</label><input type="text" id="f-role" placeholder="SWE Intern"></div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label>Status</label>
+          <select id="f-status"><option>Applied</option><option>OA</option><option>Interview</option><option>Offer</option><option>Declined</option></select>
+        </div>
+        <div class="fg"><label>Cycle</label>
+          <select id="f-cycle"><option>Summer 2027</option><option>Winter 2027</option></select>
+        </div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label>Applied Date</label><input type="date" id="f-date"></div>
+        <div class="fg"><label>Location</label><input type="text" id="f-location" placeholder="New York, NY"></div>
+      </div>
+      <div class="fg"><label>Job Link</label><input type="url" id="f-link" placeholder="https://..."></div>
+      <div class="fg"><label>Notes</label><textarea id="f-notes" placeholder="Referral, recruiter name..."></textarea></div>
+    </div>
+    <div class="m-tab-body" id="etab-email">
+      <div id="editEmailBody" class="email-body-modal"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="gm-btn" onclick="closeEdit()">Cancel</button>
+      <button class="gm-btn primary" id="editSaveBtn" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- (flag modal removed — flagging is now one-click via openFlagModal) -->
+
+<div id="toast-container"></div>
+
+<script>
+const STATUSES = ['Applied','OA','Interview','Offer','Declined'];
+const AVATAR_COLORS = ['#1a73e8','#34a853','#ea4335','#fbbc04','#8430ce','#e37400','#0f9d58','#4285f4'];
+
+let state = {
+  cycle: 'all', navFilter: 'all', viewMode: 'list',
+  apps: [], editingId: null, readingId: null
+};
+let flaggedAppIds = new Set();
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+
+function fmt(d) {
+  if (!d) return '';
+  // Slice to date-only so ISO datetimes don't break the parse
+  const normalized = d.slice(0, 10) + 'T00:00:00';
+  const now = new Date(), date = new Date(normalized);
+  const diff = now - date;
+  if (diff < 86400000 && now.getDate() === date.getDate()) return 'Today';
+  if (diff < 172800000) return 'Yesterday';
+  if (now.getFullYear() === date.getFullYear()) return date.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  return date.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function stripHtml(raw) {
+  if (!raw) return '';
+  // Remove style/script blocks with their content
+  let t = raw.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+             .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  // Block-level tags → newline
+  t = t.replace(/<(br|p|div|tr|li|h[1-6])[^>]*>/gi, '\n');
+  // Strip remaining tags
+  t = t.replace(/<[^>]+>/g, '');
+  // Decode entities
+  t = t.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+       .replace(/&nbsp;/g,' ').replace(/&#39;/g,"'").replace(/&quot;/g,'"');
+  // Collapse whitespace
+  t = t.replace(/ {2,}/g,' ').replace(/\n{3,}/g,'\n\n');
+  return t.trim();
+}
+
+function avatarColor(name) {
+  let h = 0; for (const c of (name||'')) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[h];
+}
+
+function toast(msg, duration=3000) {
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+async function api(url, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error||`HTTP ${r.status}`); }
+  return r.json();
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+
+async function checkAuth() {
+  try {
+    const { authenticated } = await api('/api/auth-status');
+    const dot = document.getElementById('authDot');
+    dot.classList.toggle('ok', authenticated);
+    document.getElementById('authLabel').textContent = authenticated ? 'Gmail connected' : 'Not connected';
+  } catch {}
+}
+
+// ── Data & Stats ───────────────────────────────────────────────────────────
+
+async function loadStats() {
+  const s = await api(`/api/stats?cycle=${encodeURIComponent(state.cycle)}`);
+  document.getElementById('s-total').textContent = s.total ?? 0;
+  document.getElementById('nc-total').textContent = s.total ?? 0;
+  ['Applied','OA','Interview','Offer','Declined'].forEach(k => {
+    document.getElementById(`s-${k}`).textContent = s[k] ?? 0;
+    document.getElementById(`nc-${k}`).textContent = s[k] ?? 0;
+  });
+  document.getElementById('s-flagged').textContent = s.flagged ?? 0;
+  document.getElementById('nc-flagged').textContent = s.flagged ?? 0;
+  document.getElementById('s-oa-done').textContent = s.oa_completed ?? 0;
+  document.getElementById('nc-oa-done').textContent = s.oa_completed ?? 0;
+}
+
+async function loadApps() {
+  const p = new URLSearchParams({ cycle: state.cycle, search: state.search || '' });
+  state.apps = await api(`/api/applications?${p}`);
+}
+
+async function loadFlaggedIds() {
+  try {
+    const items = await api('/api/feedback?resolved=false');
+    flaggedAppIds = new Set(items.map(i => i.application_id));
+  } catch {}
+}
+
+async function refresh() {
+  await Promise.all([loadApps(), loadStats(), loadFlaggedIds()]);
+  render();
+  await pollNotifications();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+
+function visibleApps() {
+  let apps = state.apps;
+  if (state.navFilter === 'flagged') {
+    return apps.filter(a => flaggedAppIds.has(a.id));
+  }
+  if (state.navFilter === 'oa-done') {
+    return apps.filter(a => a.status === 'OA' && a.oa_completed);
+  }
+  // Hide flagged apps from all other sections — they live only in the Flagged view
+  apps = apps.filter(a => !flaggedAppIds.has(a.id));
+  if (state.navFilter && state.navFilter !== 'all') {
+    apps = apps.filter(a => a.status === state.navFilter);
+  }
+  return apps;
+}
+
+function render() {
+  if (state.viewMode === 'kanban') { renderKanban(); return; }
+  if (state.viewMode === 'read')   { return; }
+  if (state.viewMode === 'flagged'){ return; }
+  renderList();
+}
+
+function renderList() {
+  const apps = visibleApps();
+  document.getElementById('countLabel').textContent = `${apps.length} conversation${apps.length!==1?'s':''}`;
+
+  const list = document.getElementById('emailList');
+  if (!apps.length) {
+    list.innerHTML = `<div class="empty-list">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+      <h3>Nothing here</h3>
+      <p>No applications match this filter.</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = apps.map(app => {
+    const isFlagged = flaggedAppIds.has(app.id);
+    const snippet = (app.notes || '').replace(/Auto-synced \| /,'').slice(0,80);
+    const cycle = (app.cycle||'').replace(' 2027','');
+    return `
+      <div class="email-row${isFlagged?' flagged-row':''}" onclick="openRead(${app.id})">
+        <div class="row-check"><input type="checkbox" onclick="event.stopPropagation()"></div>
+        <div class="row-star" onclick="event.stopPropagation()" title="Star">☆</div>
+        <div class="row-company">${esc(app.company)}</div>
+        <div class="row-body">
+          <span class="row-subject">${esc(app.role||'Intern')}</span>
+          <span class="row-snippet">— ${esc(snippet)}</span>
+        </div>
+        <div class="row-labels">
+          <span class="label-pill lp-${esc(app.status)}">${esc(app.status)}</span>
+          ${app.status === 'OA' && app.oa_completed ? `<span class="label-pill lp-OA-done">✓ Submitted</span>` : ''}
+          ${cycle ? `<span class="label-pill lp-${cycle==='Summer'?'Summer':'Winter'}">${esc(cycle)}</span>` : ''}
+          ${isFlagged ? `<span class="label-pill lp-Flagged">⚑ Flagged</span>` : ''}
+        </div>
+        <div class="row-date">${fmt(app.applied_date)}</div>
+        <div class="row-actions">
+          ${app.status === 'OA' ? `<button class="row-action-btn oa-done-btn${app.oa_completed?' done':''}" title="${app.oa_completed?'Mark OA not done':'Mark OA submitted'}" onclick="event.stopPropagation();markOaDone(${app.id},${app.oa_completed?0:1})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </button>` : ''}
+          <button class="row-action-btn" title="Edit" onclick="event.stopPropagation();openEdit(${app.id})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="row-action-btn flg" title="Flag" onclick="event.stopPropagation();openFlagModal(${app.id})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </button>
+          <button class="row-action-btn del" title="Delete" onclick="event.stopPropagation();deleteApp(${app.id})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderKanban() {
+  STATUSES.forEach(s => {
+    const cards = state.apps.filter(a => a.status === s);
+    document.getElementById(`kc-${s}`).textContent = cards.length;
+    const el = document.getElementById(`kcards-${s}`);
+    el.innerHTML = cards.length ? cards.map(app => `
+      <div class="k-card${flaggedAppIds.has(app.id)?' flagged':''}" onclick="openRead(${app.id})">
+        <div class="k-card-actions">
+          <button class="k-action-btn flg" title="Flag" onclick="event.stopPropagation();openFlagModal(${app.id})">⚑</button>
+          <button class="k-action-btn del" title="Delete" onclick="event.stopPropagation();deleteApp(${app.id})">✕</button>
+        </div>
+        <div class="k-company">${esc(app.company)}</div>
+        <div class="k-role">${esc(app.role||'Intern')}</div>
+        <div class="k-footer">
+          <div class="k-date">${fmt(app.applied_date)}</div>
+          <div style="display:flex;gap:4px;align-items:center">
+            ${app.status==='OA'&&app.oa_completed?`<span style="font-size:9px;padding:2px 5px;border-radius:3px;font-weight:600;background:#fff3e0;color:#e65100">✓ Submitted</span>`:''}
+            <div class="k-cycle">${esc((app.cycle||'').replace(' 2027',''))}</div>
+          </div>
+        </div>
+      </div>`).join('') : `<div style="text-align:center;padding:20px;font-size:12px;color:var(--muted)">Empty</div>`;
+  });
+}
+
+async function renderFlagged() {
+  const list = document.getElementById('flaggedList');
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Loading...</div>';
+  try {
+    const items = await api('/api/feedback?resolved=false');
+    flaggedAppIds = new Set(items.map(i => i.application_id));
+    if (!items.length) {
+      list.innerHTML = `<div style="text-align:center;padding:60px;color:var(--muted)">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style="font-size:18px;margin-bottom:6px;color:var(--text)">All clear!</div>
+        <div>No flagged items to review.</div>
+      </div>`;
+      return;
+    }
+    const LABELS = { wrong_status:'Wrong status', false_positive:'False positive', wrong_company:'Wrong company', wrong_role:'Wrong role', wrong_cycle:'Wrong cycle', duplicate:'Duplicate' };
+    list.innerHTML = items.map(item => `
+      <div class="f-card" id="fc-${item.id}">
+        <div class="f-card-top">
+          <div style="flex:1">
+            <div class="f-company">${esc(item.company)}</div>
+            <div class="f-role">${esc(item.role||'')}</div>
+            <div class="f-badges">
+              <span class="label-pill lp-${esc(item.current_status)}">${esc(item.current_status)}</span>
+              <span class="issue-badge">${LABELS[item.issue_type]||item.issue_type}</span>
+              ${item.suggested_status
+                ? `<span class="suggestion">→ move to <b>${esc(item.suggested_status)}</b></span>`
+                : `<span style="font-size:12px;color:var(--s-declined)">→ remove entry</span>`}
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">${fmt(item.applied_date)}</div>
+        </div>
+        ${item.note ? `<div class="f-note">"${esc(item.note)}"</div>` : ''}
+        ${item.email_body ? `<div class="f-email">${esc(stripHtml(item.email_body).slice(0,1400))}</div>` : ''}
+        <div class="f-actions">
+          <button class="f-btn apply" onclick="resolveFeedback(${item.id},true)">
+            ✓ Apply fix ${item.suggested_status ? `(→ ${esc(item.suggested_status)})` : '(remove)'}
+          </button>
+          <button class="f-btn dismiss" onclick="resolveFeedback(${item.id},false)">Dismiss</button>
+          <button class="f-btn" onclick="openRead(${item.application_id})">View email</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = `<div style="padding:20px;color:red">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── Read View ──────────────────────────────────────────────────────────────
+
+function openRead(id) {
+  const app = state.apps.find(a => a.id === id);
+  if (!app) return;
+  state.readingId = id;
+
+  document.getElementById('readSubject').textContent = app.company + (app.role ? ` — ${app.role}` : '');
+
+  const av = document.getElementById('readAvatar');
+  av.style.background = avatarColor(app.company);
+  av.textContent = (app.company||'?')[0].toUpperCase();
+
+  document.getElementById('readFromName').textContent = app.company;
+  document.getElementById('readFromDetail').textContent = `${app.role||'Intern'} · ${app.cycle||''}`;
+  document.getElementById('readDate').innerHTML = `${fmt(app.applied_date)}<br><span style="color:var(--muted2)">${app.applied_date||''}</span>`;
+
+  const labels = document.getElementById('readLabels');
+  const isFlagged = flaggedAppIds.has(id);
+  labels.innerHTML = `
+    <span class="label-pill lp-${esc(app.status)}">${esc(app.status)}</span>
+    ${app.cycle ? `<span class="label-pill lp-${app.cycle.includes('Summer')?'Summer':'Winter'}">${esc(app.cycle)}</span>` : ''}
+    ${isFlagged ? `<span class="label-pill lp-Flagged">⚑ Flagged</span>` : ''}
+  `;
+
+  const body = document.getElementById('readBody');
+  if (app.email_body) {
+    body.textContent = stripHtml(app.email_body);
+    body.classList.remove('no-email');
+  } else {
+    body.innerHTML = 'No email content available for this entry.<br><br>This application was either added manually or synced before email storage was enabled.<br><br><b>Tip:</b> Click Sync Gmail to re-sync and fetch email content.';
+    body.classList.add('no-email');
+  }
+
+  document.getElementById('readEditBtn').onclick = () => openEdit(id);
+  document.getElementById('readFlagBtn').onclick = () => openFlagModal(id);
+  document.getElementById('readDeleteBtn').onclick = () => deleteApp(id);
+
+  showView('read');
+}
+
+function closeReadView() {
+  showView('list');
+}
+
+// ── View Management ────────────────────────────────────────────────────────
+
+function showView(v) {
+  state.viewMode = v;
+  document.getElementById('list-view').style.display    = v==='list'    ? 'block'  : 'none';
+  document.getElementById('kanban-view').style.display  = v==='kanban'  ? 'flex'   : 'none';
+  document.getElementById('read-view').style.display    = v==='read'    ? 'block'  : 'none';
+  document.getElementById('flagged-view').style.display = v==='flagged' ? 'block'  : 'none';
+
+  // Update kanban nav item highlight
+  document.querySelectorAll('[data-viewmode]').forEach(el => {
+    el.classList.toggle('active', el.dataset.viewmode === v);
+  });
+}
+
+function setViewMode(v, el) {
+  if (v === 'kanban') {
+    showView('kanban');
+    renderKanban();
+    // deactivate nav filter
+    document.querySelectorAll('.nav-item[data-navfilter]').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.stat-chip').forEach(c => c.classList.remove('active'));
+  }
+}
+
+function setNavFilter(filter, el) {
+  state.navFilter = filter;
+
+  document.querySelectorAll('.nav-item[data-navfilter]').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('.stat-chip').forEach(c => c.classList.remove('active'));
+  const chip = document.querySelector(`[data-chipfilter="${filter}"]`);
+  if (chip) chip.classList.add('active');
+
+  // Also deactivate kanban nav
+  document.querySelectorAll('[data-viewmode]').forEach(i => i.classList.remove('active'));
+
+  if (filter === 'flagged') {
+    showView('flagged');
+    renderFlagged();
+  } else {
+    showView('list');
+    renderList();
+  }
+}
+
+
+function setCycle(cycle, el) {
+  state.cycle = cycle;
+  document.querySelectorAll('.cycle-tag').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  refresh();
+}
+
+// ── Edit Modal ─────────────────────────────────────────────────────────────
+
+function openAdd() {
+  state.editingId = null;
+  document.getElementById('editModalTitle').textContent = 'New Application';
+  ['f-company','f-role','f-location','f-link','f-notes'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('f-status').value = 'Applied';
+  document.getElementById('f-cycle').value  = 'Summer 2027';
+  document.getElementById('f-date').value   = new Date().toISOString().slice(0,10);
+  document.getElementById('editEmailBody').innerHTML = '<div style="color:var(--muted);font-style:italic;padding:20px;text-align:center">No email — this is a manual entry.</div>';
+  switchEditTab('form', document.querySelector('.m-tab'));
+  document.getElementById('editOverlay').classList.add('open');
+  document.getElementById('f-company').focus();
+}
+
+function openEdit(id) {
+  const app = state.apps.find(a => a.id === id);
+  if (!app) return;
+  state.editingId = id;
+  document.getElementById('editModalTitle').textContent = `Edit — ${app.company}`;
+  document.getElementById('editId').value    = id;
+  document.getElementById('f-company').value = app.company||'';
+  document.getElementById('f-role').value    = app.role||'';
+  document.getElementById('f-status').value  = app.status||'Applied';
+  document.getElementById('f-cycle').value   = app.cycle||'Summer 2027';
+  document.getElementById('f-date').value    = app.applied_date||'';
+  document.getElementById('f-location').value= app.location||'';
+  document.getElementById('f-link').value    = app.link||'';
+  document.getElementById('f-notes').value   = app.notes||'';
+
+  const eb = document.getElementById('editEmailBody');
+  eb.textContent = app.email_body ? stripHtml(app.email_body) : '';
+  if (!app.email_body) eb.innerHTML = '<div style="color:var(--muted);font-style:italic;padding:20px;text-align:center">No email content available. Re-sync Gmail to fetch it.</div>';
+
+  switchEditTab('form', document.querySelector('.m-tab'));
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+function closeEdit() { document.getElementById('editOverlay').classList.remove('open'); }
+
+function switchEditTab(tab, btn) {
+  document.querySelectorAll('.m-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.m-tab-body').forEach(b => b.classList.remove('active'));
+  document.getElementById(`etab-${tab}`).classList.add('active');
+}
+
+async function saveEdit() {
+  const company = document.getElementById('f-company').value.trim();
+  if (!company) { toast('Company name is required'); return; }
+  const data = {
+    company,
+    role:         document.getElementById('f-role').value.trim(),
+    status:       document.getElementById('f-status').value,
+    cycle:        document.getElementById('f-cycle').value,
+    applied_date: document.getElementById('f-date').value,
+    location:     document.getElementById('f-location').value.trim(),
+    link:         document.getElementById('f-link').value.trim(),
+    notes:        document.getElementById('f-notes').value.trim(),
+  };
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true;
+  try {
+    if (state.editingId) {
+      await api(`/api/applications/${state.editingId}`, 'PUT', data);
+      toast(`Saved — ${company}`);
+    } else {
+      await api('/api/applications', 'POST', data);
+      toast(`Added — ${company}`);
+      if (Notification.permission==='granted') new Notification('New Application', {body:`${company} — ${data.role||'Intern'}`});
+    }
+    closeEdit();
+    await refresh();
+    if (state.viewMode === 'read' && state.readingId) openRead(state.readingId);
+  } catch(e) { toast(`Error: ${e.message}`); }
+  finally { btn.disabled = false; }
+}
+
+async function markOaDone(id, val) {
+  try {
+    await api(`/api/applications/${id}`, 'PUT', { oa_completed: val });
+    const app = state.apps.find(a => a.id === id);
+    if (app) app.oa_completed = val;
+    toast(val ? 'OA marked as submitted!' : 'OA marked as pending');
+    await loadStats();
+    render();
+  } catch(e) { toast(`Error: ${e.message}`); }
+}
+
+async function deleteApp(id) {
+  const app = state.apps.find(a => a.id===id);
+  if (!confirm(`Delete application for ${app?.company}?`)) return;
+  try {
+    await api(`/api/applications/${id}`, 'DELETE');
+    toast(`Deleted — ${app?.company}`);
+    if (state.viewMode==='read') closeReadView();
+    await refresh();
+  } catch(e) { toast(`Error: ${e.message}`); }
+}
+
+// ── Flag Modal ─────────────────────────────────────────────────────────────
+
+async function openFlagModal(id) {
+  toast('Diagnosing…', 1500);
+  try {
+    const diag = await api(`/api/applications/${id}/diagnose`);
+    await api('/api/feedback', 'POST', {
+      application_id: id,
+      issue_type: diag.issue_type || 'wrong_status',
+      suggested_status: diag.suggested_status || null,
+      note: diag.note || '',
+    });
+    toast('Flagged: ' + (diag.note || 'issue detected'));
+    await Promise.all([loadStats(), loadFlaggedIds()]);
+    render();
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function resolveFeedback(fid, apply) {
+  try {
+    await api(`/api/feedback/${fid}/resolve`, 'POST', { apply });
+    toast(apply ? 'Fix applied!' : 'Dismissed');
+    await refresh();
+    await renderFlagged();
+  } catch(e) { toast(`Error: ${e.message}`); }
+}
+
+// ── Sync ───────────────────────────────────────────────────────────────────
+
+async function syncGmail() {
+  const btn = document.getElementById('syncBtn');
+  const icon = document.getElementById('syncIcon');
+  btn.disabled = true; icon.classList.add('spin');
+  try {
+    const { new: n, updated: u } = await api('/api/sync', 'POST');
+    toast(`Sync complete — ${n} new, ${u} updated`);
+    await refresh();
+  } catch(e) {
+    if (e.message.includes('Not authenticated')) {
+      if (confirm('Gmail not connected. Connect now?')) window.location.href='/auth/gmail';
+    } else { toast(`Sync error: ${e.message}`); }
+  } finally { btn.disabled=false; icon.classList.remove('spin'); }
+}
+
+async function pollNotifications() {
+  try {
+    const notifs = await api('/api/notifications');
+    notifs.forEach(n => {
+      toast(n.message, 4000);
+      if (Notification.permission==='granted') new Notification('InternTrack 2027', {body:n.message});
+    });
+  } catch {}
+}
+
+// ── Events ─────────────────────────────────────────────────────────────────
+
+document.getElementById('addBtn').addEventListener('click', openAdd);
+document.getElementById('syncBtn').addEventListener('click', syncGmail);
+
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    state.search = e.target.value.trim();
+    await loadApps();
+    render();
+  }, 280);
+});
+
+document.querySelectorAll('.overlay').forEach(ov => {
+  ov.addEventListener('click', e => {
+    if (e.target === ov) { ov.classList.remove('open'); }
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') {
+    document.querySelectorAll('.overlay.open').forEach(ov => ov.classList.remove('open'));
+    if (state.viewMode==='read') closeReadView();
+  }
+  if ((e.metaKey||e.ctrlKey) && e.key==='k') { e.preventDefault(); openAdd(); }
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+(async () => {
+  if ('Notification' in window && Notification.permission==='default') await Notification.requestPermission();
+  await Promise.all([checkAuth(), refresh()]);
+  setViewMode('kanban', document.querySelector('[data-viewmode=kanban]'));
+  setInterval(pollNotifications, 30_000);
+  setInterval(refresh, 300_000);
+})();
+</script>
+</body>
+</html>

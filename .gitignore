@@ -1,0 +1,18 @@
+# Secrets & credentials
+.env
+credentials.json
+token.json
+
+# Database
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+venv/
+
+# Claude
+.claude/
