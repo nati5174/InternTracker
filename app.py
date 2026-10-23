@@ -2,6 +2,9 @@ import os
 import secrets
 from hmac import compare_digest
 from urllib.parse import urlparse, parse_qs
+from requests.exceptions import RequestException
+from google.auth.exceptions import TransportError
+from oauthlib.oauth2 import OAuth2Error
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, Response
 
 from database import Database
@@ -17,6 +20,25 @@ app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", S
 data_dir = os.environ.get("DATA_DIR", os.path.dirname(__file__))
 os.makedirs(data_dir, exist_ok=True)
 db = Database(os.path.join(data_dir, "internships.db"))
+
+
+def gmail_error(message, status):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": message}), status
+    return render_template("gmail_error.html", message=message), status
+
+
+@app.errorhandler(RequestException)
+@app.errorhandler(TransportError)
+def gmail_network_error(error):
+    # Do not log request URLs or exception text: OAuth requests contain secrets.
+    app.logger.warning("Gmail connection failed (%s)", type(error).__name__)
+    return gmail_error("Cannot reach Google right now. Check the server's internet access, then connect Gmail again.", 503)
+
+
+@app.errorhandler(OAuth2Error)
+def gmail_oauth_error(error):
+    return gmail_error("Google could not complete sign-in. Please start a new Gmail connection.", 400)
 
 
 @app.before_request
@@ -68,7 +90,10 @@ def auth_gmail():
 def auth_callback():
     state = session.pop("oauth_state", None)
     if not state or not compare_digest(state, request.args.get("state", "")):
-        return "Invalid OAuth state. Please connect Gmail again.", 400
+        return gmail_error("This Gmail sign-in has expired. Please connect Gmail again.", 400)
+    if request.args.get("error"):
+        session.pop("oauth_code_verifier", None)
+        return gmail_error("Gmail access was not granted. You can try connecting again.", 400)
     code = request.args.get("code")
     if code:
         scanner = GmailScanner()
@@ -293,4 +318,4 @@ def reclassify_all():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=int(os.environ.get("PORT", "5000")))

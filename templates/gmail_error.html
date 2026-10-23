@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gmail connection — InternTrack</title>
+  <style>
+    body { margin: 0; padding: 32px; background: #10131b; color: #eef0f6; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 520px; margin: 12vh auto; }
+    h1 { font-size: 26px; }
+    a { color: #a8c7ff; margin-right: 24px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Gmail connection interrupted</h1>
+    <p>{{ message }}</p>
+    <a href="{{ url_for('auth_gmail') }}">Connect Gmail again</a>
+    <a href="{{ url_for('index') }}">Back to tracker</a>
+  </main>
+</body>
+</html>

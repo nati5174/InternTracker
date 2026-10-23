@@ -16,6 +16,8 @@ except ImportError:
     pass
 
 from google.auth.transport.requests import Request
+from google.auth.exceptions import TransportError
+from requests.exceptions import RequestException
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -202,6 +204,9 @@ class GmailScanner:
             try:
                 self.creds.refresh(Request())
                 self._save_token()
+            except (TransportError, RequestException):
+                # A temporary outage does not mean the user revoked access.
+                raise
             except Exception:
                 self.creds = None
 
@@ -237,7 +242,7 @@ class GmailScanner:
         flow = Flow.from_client_secrets_file(
             CREDENTIALS_FILE, scopes=SCOPES, redirect_uri=redirect_uri
         )
-        kwargs = {"code": code}
+        kwargs = {"code": code, "timeout": 30}
         if code_verifier:
             kwargs["code_verifier"] = code_verifier
         flow.fetch_token(**kwargs)

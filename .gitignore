@@ -13,6 +13,7 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .test-tmp/
+.test-tmp-*/
 tmp*/
 venv/
 
