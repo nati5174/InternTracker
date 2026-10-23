@@ -21,8 +21,8 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-CREDENTIALS_FILE = "credentials.json"
-TOKEN_FILE = "token.json"
+CREDENTIALS_FILE = os.environ.get("GOOGLE_CREDENTIALS_FILE", "credentials.json")
+TOKEN_FILE = os.path.join(os.environ.get("DATA_DIR", "."), "token.json")
 
 # ── Classification patterns (priority: Offer > Declined > Interview > OA > Applied) ──
 

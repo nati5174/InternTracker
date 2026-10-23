@@ -37,6 +37,14 @@ Open http://localhost:5000
 
 Click the green/red dot in the top-right corner's area or click **Sync Gmail** — it will redirect you to authorize Gmail access. After authorizing, click **Sync Gmail** to import emails.
 
+## Production hosting (personal tracker)
+
+Deploy the `render.yaml` Blueprint from the `master` branch. It provisions a paid web service with a 1 GB persistent disk. Choose a strong `APP_PASSWORD`; the login username is `owner`. Set `PUBLIC_URL` to the service's HTTPS URL (no trailing slash), and update it after creation if Render assigns a different hostname.
+
+Upload your Google OAuth client JSON as a Render secret file named `credentials.json`. In Google Cloud, add `<PUBLIC_URL>/auth/callback` to the client's authorized redirect URIs. Open the hosted tracker and connect Gmail again. Gmail tokens and the SQLite database persist under `/var/data`; local applications are not automatically transferred. Never commit credentials, tokens, or your database.
+
+The app runs under Gunicorn with one worker. `/healthz` is public; all tracker pages and API routes require the configured password in production. This deployment is for one owner and one Gmail account.
+
 ## Features
 
 - **Kanban board** with 5 columns: Applied / OA / Interview / Offer / Declined

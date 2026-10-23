@@ -1,13 +1,44 @@
 import os
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+import secrets
+from hmac import compare_digest
+from urllib.parse import urlparse, parse_qs
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, Response
 
 from database import Database
 from gmail_scanner import GmailScanner
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "intern-tracker-2027-secret")
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+production = os.environ.get("APP_ENV") == "production"
+if production and not all(os.environ.get(key) for key in ("SECRET_KEY", "APP_USERNAME", "APP_PASSWORD")):
+    raise RuntimeError("Production requires SECRET_KEY, APP_USERNAME, and APP_PASSWORD")
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=production)
 
-db = Database(os.path.join(os.path.dirname(__file__), "internships.db"))
+data_dir = os.environ.get("DATA_DIR", os.path.dirname(__file__))
+os.makedirs(data_dir, exist_ok=True)
+db = Database(os.path.join(data_dir, "internships.db"))
+
+
+@app.before_request
+def protect_tracker():
+    if request.path == "/healthz":
+        return None
+    password = os.environ.get("APP_PASSWORD")
+    if password:
+        auth = request.authorization
+        if not (auth and compare_digest(auth.username or "", os.environ.get("APP_USERNAME", "owner"))
+                and compare_digest(auth.password or "", password)):
+            return Response("Sign in to InternTrack", 401, {"WWW-Authenticate": 'Basic realm="InternTrack"'})
+    if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+        origin = request.headers.get("Origin")
+        expected = os.environ.get("PUBLIC_URL", request.host_url).rstrip("/")
+        if origin and origin.rstrip("/") != expected:
+            return jsonify({"error": "Invalid request origin"}), 403
+
+
+@app.route("/healthz")
+def healthz():
+    return jsonify({"status": "ok"})
 
 
 # ── Pages ────────────────────────────────────────────────────────────────────
@@ -19,7 +50,7 @@ def index():
 
 # ── Gmail OAuth ──────────────────────────────────────────────────────────────
 
-REDIRECT_URI = "http://localhost:5000/auth/callback"
+REDIRECT_URI = os.environ.get("PUBLIC_URL", "http://localhost:5000").rstrip("/") + "/auth/callback"
 
 
 @app.route("/auth/gmail")
@@ -29,11 +60,15 @@ def auth_gmail():
         return "credentials.json not found. See README.md for setup instructions.", 400
     auth_url, code_verifier = scanner.get_auth_url(REDIRECT_URI)
     session["oauth_code_verifier"] = code_verifier
+    session["oauth_state"] = parse_qs(urlparse(auth_url).query)["state"][0]
     return redirect(auth_url)
 
 
 @app.route("/auth/callback")
 def auth_callback():
+    state = session.pop("oauth_state", None)
+    if not state or not compare_digest(state, request.args.get("state", "")):
+        return "Invalid OAuth state. Please connect Gmail again.", 400
     code = request.args.get("code")
     if code:
         scanner = GmailScanner()
